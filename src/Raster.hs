@@ -47,6 +47,8 @@ reflectXaxis (x1, y1) = (x1, -y1)
 maxY :: Point -> Point -> Int
 maxY (x1, y1) (x2, y2) = max y1 y2
 
+-- maxY = max `on` fst
+
 -- An infinite list.
 steps :: Int -> Double -> [Int]
 steps start m = map round [dblStart, dblStart + m ..]

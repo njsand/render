@@ -29,6 +29,7 @@ executable render-exe
   build-depends:       base
                      , render
                      , array
+                     , random
   default-language:    Haskell2010
 
 test-suite render-test

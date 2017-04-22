@@ -22,14 +22,14 @@ import Raster
 import Data.Char
 import Data.Array.IO
 import System.Environment
+import System.Random
 
 -- import Codec.Picture
 
--- todo
--- 1. Allow width and height on the command line - thread these through code.
--- 2. Make it do N random lines instead of a grid - N on command line
--- 3. write usage to stderr / set return code?
--- 4. Write out something easier to view than pbm.
+-- TODO
+-- 1. write usage to stderr / set return code?
+-- 2. Write out something easier to view than pbm.
+-- 3. Use the standard library version of myAtMay
 
 main :: IO ()
 main = do
@@ -40,20 +40,36 @@ main = do
     Just (Params Array d numLines) -> mainArray d numLines
     Nothing -> usage
 
-data Sequence = List | Array deriving (Read)                                                                                                                                                                                              
-data Params = Params {mode :: Sequence, dims :: Dimensions, numLines :: Int}
+data SequenceType = List | Array deriving (Read)                                                                                                                                                                                              
+data Params = Params {mode :: SequenceType, dims :: Dimensions, numLines :: Int}
 
 -- Image dimensions
-type Dimensions = (Int, Int)
+type Width = Int
+type Height = Int
+type Dimensions = (Width, Height)
 
--- TODO: Make this fail for bad program args.
 checkArgs :: [String] -> Maybe Params
-checkArgs xs = Just $ Params (read (xs !! 0))
-                             ((read (xs !! 1)), (read (xs !! 2)))
-                             (read (xs !! 3))
-  
+checkArgs xs = do
+  mode <- myAtMay xs 0
+  width <- myAtMay xs 1
+  height <- myAtMay xs 2
+  lines <- myAtMay xs 3
+  boolMaybe $ and $ (all isNumber) <$> [width, height, lines]
+  seqType <- checkSeqType mode
+  Just $ Params seqType ((read width), (read height)) (read lines)
+
+boolMaybe :: Bool -> Maybe Bool
+boolMaybe True = Just True
+boolMaybe False = Nothing
+
+checkSeqType :: String -> Maybe SequenceType
+checkSeqType s
+    | map toLower s == "array" = Just Array
+    | map toLower s == "list" = Just List
+    | otherwise = Nothing
+
 usage :: IO ()
-usage = putStrLn "render.exe width height num-lines"
+usage = putStrLn "usage: render Array|List width height number-of-lines"
 
 myAtMay :: [a] -> Int -> Maybe a
 myAtMay [] _ = Nothing
@@ -63,17 +79,17 @@ myAtMay (_:xs) n = myAtMay xs (n - 1)
 -- Do everything using a list of lists as the frame buffer.  Probably going to
 -- be pretty slow.
 mainList :: Dimensions -> Int -> IO ()
-mainList dims@(w, h) numLines = writePbm img2
-       where img1 = foldl drawLine (pureBlackImg dims) (hLines dims numLines)
-             img2 = foldl drawLine img1 (vLines dims numLines)
+mainList dims@(w, h) numLines = do
+  lines <- sequence $ fmap randLine [dims | _ <- [1 .. numLines]]
+  writePbm $ foldl drawLine (pureBlackImg dims) lines
 
 -- Do everything using a 2d array as the frame buffer.  We'd hope this was
 -- faster than the list version.
 mainArray :: Dimensions -> Int -> IO ()
 mainArray dims@(w, h) numLines = do
   arr <- newArray ((0, 0), (h - 1, w - 1)) 0
-  drawLinesA arr (hLines dims numLines)
-  drawLinesA arr (vLines dims numLines)
+  lines <- sequence $ fmap randLine [dims | _ <- [1 .. numLines]]
+  drawLinesA arr lines
   elements <- getElems arr
   writePbm $ rectangle elements w
 
@@ -95,19 +111,13 @@ rectangle xs n = take n xs : rectangle (drop n xs) n
 pureBlackImg :: Dimensions -> [[Int]]
 pureBlackImg (w, h) = [[0 | _ <- [1..w]] | _ <- [1..h]]
 
--- Alternative way to write this lol.
--- allBlack = replicate height $ replicate width 0
-
--- horizontal lines!
-hLines :: Dimensions -> Int -> [Line]
-hLines (w, h) numLines = zipWith makeLine [(0, y) | y <- ys]
-                                          [(w - 1, y) | y <- ys]
-    where step = h `div` numLines
-          ys = [0 , step .. h - 1]
-          
--- vertical lines!
-vLines :: Dimensions -> Int -> [Line]
-vLines (w, h) numLines = zipWith makeLine [(x, 0) | x <- xs]
-                                          [(x, h - 1) | x <- xs]
-    where step = w `div` numLines
-          xs = [0,step .. w - 1]
+-- Return an IO action that yields a random line within the provided dimensions.
+randLine :: Dimensions -> IO Line
+randLine (w, h) = do
+  g0 <- getStdGen
+  let (x1, g1) = randomR (0, w-1) g0
+      (y1, g2) = randomR (0, h-1) g1
+      (x2, g3) = randomR (0, w-1) g2
+      (y2, g4) = randomR (0, h-1) g3
+  setStdGen g4
+  return $ makeLine (x1, y1) (x2, y2)
