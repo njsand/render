@@ -9,9 +9,9 @@ writePbm :: [[Int]] -> IO ()
 writePbm pixels = do
   putStrLn "P1"
   putStrLn "# This file was written by Pbm.hs, yeah!"
-  putStr (show $ length $ head $ pixels) -- height
+  putStr (show $ length $ head pixels) -- height
   putStr " "
-  putStrLn (show $ length $ pixels)        -- width
+  putStrLn (show $ length pixels)        -- width
   writeRows pixels
 
 -- Write each image row on its own line.

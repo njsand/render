@@ -1,5 +1,5 @@
--- Rasterize a bunch of random lines to a pixmap using either an IOUArray or a list
--- of lists as the pixmap.
+-- Rasterize a bunch of random lines to an image using either an IOUArray or a list
+-- of lists to store the image pixels.
 --
 -- This was written mostly to begin to explore answers to the question "How do I
 -- do arrays in Haskell?"
@@ -13,7 +13,7 @@
 -- supplied on the command line.  As mentioned above, lines are created
 -- randomly, so the program output will be different from run to run.
 --
--- Usage: render.exe list|array width height number-of-lines
+-- Usage: render {list|array} width height number-of-lines
 
 module Main where
 
@@ -69,7 +69,7 @@ checkSeqType s
     | otherwise = Nothing
 
 usage :: IO ()
-usage = putStrLn "usage: render Array|List width height number-of-lines"
+usage = putStrLn "usage: render {array|list} width height number-of-lines"
 
 myAtMay :: [a] -> Int -> Maybe a
 myAtMay [] _ = Nothing
@@ -94,7 +94,7 @@ mainArray dims@(w, h) numLines = do
   writePbm $ rectangle elements w
 
 -- Turn a list into a list of lists, each one of length N.  (The final list
--- will be shorter than N if (length XS) is not a multiple of N.)
+-- will be shorter than N if the list's length is not a multiple of N.)
 rectangle :: [a] -> Int -> [[a]]
 rectangle [] _ = []
 rectangle xs n = take n xs : rectangle (drop n xs) n
@@ -114,10 +114,9 @@ pureBlackImg (w, h) = [[0 | _ <- [1..w]] | _ <- [1..h]]
 -- Return an IO action that yields a random line within the provided dimensions.
 randLine :: Dimensions -> IO Line
 randLine (w, h) = do
-  g0 <- getStdGen
+  g0 <- newStdGen
   let (x1, g1) = randomR (0, w-1) g0
       (y1, g2) = randomR (0, h-1) g1
       (x2, g3) = randomR (0, w-1) g2
       (y2, g4) = randomR (0, h-1) g3
-  setStdGen g4
   return $ makeLine (x1, y1) (x2, y2)
