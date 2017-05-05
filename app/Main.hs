@@ -23,13 +23,13 @@ import Data.Char
 import Data.Array.IO
 import System.Environment
 import System.Random
+import Safe(atMay)
 
 -- import Codec.Picture
 
 -- TODO
 -- 1. write usage to stderr / set return code?
 -- 2. Write out something easier to view than pbm.
--- 3. Use the standard library version of myAtMay
 
 main :: IO ()
 main = do
@@ -50,10 +50,10 @@ type Dimensions = (Width, Height)
 
 checkArgs :: [String] -> Maybe Params
 checkArgs xs = do
-  mode <- myAtMay xs 0
-  width <- myAtMay xs 1
-  height <- myAtMay xs 2
-  lines <- myAtMay xs 3
+  mode <- atMay xs 0
+  width <- atMay xs 1
+  height <- atMay xs 2
+  lines <- atMay xs 3
   boolMaybe $ and $ (all isNumber) <$> [width, height, lines]
   seqType <- checkSeqType mode
   Just $ Params seqType ((read width), (read height)) (read lines)
@@ -70,11 +70,6 @@ checkSeqType s
 
 usage :: IO ()
 usage = putStrLn "usage: render {array|list} width height number-of-lines"
-
-myAtMay :: [a] -> Int -> Maybe a
-myAtMay [] _ = Nothing
-myAtMay (x:xs) 0 = Just x
-myAtMay (_:xs) n = myAtMay xs (n - 1)
 
 -- Do everything using a list of lists as the frame buffer.  Probably going to
 -- be pretty slow.
