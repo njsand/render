@@ -30,6 +30,8 @@ executable render-exe
                      , array
                      , random
                      , safe
+                     , vector
+                     , JuicyPixels
   default-language:    Haskell2010
 
 test-suite render-test

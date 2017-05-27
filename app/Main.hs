@@ -1,47 +1,34 @@
--- Rasterize a bunch of random lines to an image using either an IOUArray or a list
--- of lists to store the image pixels.
---
--- This was written mostly to begin to explore answers to the question "How do I
--- do arrays in Haskell?"
---
--- Using linked lists to implement a random access 2d array (pretty much what a
--- pixmap is?) is pretty much the wrong data structure for the job.  The right
--- one is an array.  So we implement both in this program to see just how much
--- faster the array version is.
---
--- The width and height of the pixmap, and the number of lines to draw are
--- supplied on the command line.  As mentioned above, lines are created
--- randomly, so the program output will be different from run to run.
---
--- Usage: render {list|array} width height number-of-lines
-
 module Main where
 
-import Pbm
-import Raster
-import Data.Char
+import Data.Char(isNumber, toLower)
 import Data.Array.IO
-import System.Environment
+import System.Environment(getArgs)
 import System.Random
 import Safe(atMay)
-
--- import Codec.Picture
+import qualified Data.Vector.Storable as V
+import qualified Data.Word as W
+import qualified Codec.Picture as P
+import Raster
 
 -- TODO
--- 1. write usage to stderr / set return code?
--- 2. Write out something easier to view than pbm.
+-- 1. write usage to stderr (not stdout) / set return code on bad invocation.
 
 main :: IO ()
 main = do
   args <- getArgs
   let params = checkArgs args
   case params of
-    Just (Params List d numLines) -> mainList d numLines
-    Just (Params Array d numLines) -> mainArray d numLines
+    Just (Params List d numLines name) -> mainList d numLines name
+    Just (Params Array d numLines name) -> mainArray d numLines name
     Nothing -> usage
 
-data SequenceType = List | Array deriving (Read)                                                                                                                                                                                              
-data Params = Params {mode :: SequenceType, dims :: Dimensions, numLines :: Int}
+data SequenceType = List | Array deriving (Read)
+
+-- Arguments given to the program.
+data Params = Params {mode :: SequenceType,
+                      dims :: Dimensions,
+                      numLines :: Int,
+                      filename ::String}
 
 -- Image dimensions
 type Width = Int
@@ -54,53 +41,61 @@ checkArgs xs = do
   width <- atMay xs 1
   height <- atMay xs 2
   lines <- atMay xs 3
+  filename <- atMay xs 4
   boolMaybe $ and $ (all isNumber) <$> [width, height, lines]
   seqType <- checkSeqType mode
-  Just $ Params seqType ((read width), (read height)) (read lines)
+  boolMaybe $ not $ null filename 
+  Just $ Params seqType ((read width), (read height)) (read lines) filename
 
+-- Turn a Bool into a Maybe Bool.  Useful for predicates that return False when
+-- we want them to return Nothing.
 boolMaybe :: Bool -> Maybe Bool
 boolMaybe True = Just True
 boolMaybe False = Nothing
 
+-- Check that a string corresponds to one of the SequenceType values.
 checkSeqType :: String -> Maybe SequenceType
 checkSeqType s
     | map toLower s == "array" = Just Array
     | map toLower s == "list" = Just List
     | otherwise = Nothing
 
+-- Write a useage message to stdout.
 usage :: IO ()
-usage = putStrLn "usage: render {array|list} width height number-of-lines"
+usage = putStrLn "usage: render {array|list} width height number-of-lines output-filename"
 
 -- Do everything using a list of lists as the frame buffer.  Probably going to
 -- be pretty slow.
-mainList :: Dimensions -> Int -> IO ()
-mainList dims@(w, h) numLines = do
+mainList :: Dimensions -> Int -> String -> IO ()
+mainList dims@(w, h) numLines file = do
   lines <- sequence $ fmap randLine [dims | _ <- [1 .. numLines]]
-  writePbm $ foldl drawLine (pureBlackImg dims) lines
+  let img = foldl drawLine (pureBlackImg dims) lines
+  writePng w h (imageToVector (concat img)) file
 
 -- Do everything using a 2d array as the frame buffer.  We'd hope this was
 -- faster than the list version.
-mainArray :: Dimensions -> Int -> IO ()
-mainArray dims@(w, h) numLines = do
+mainArray :: Dimensions -> Int -> String -> IO ()
+mainArray dims@(w, h) numLines file = do
   arr <- newArray ((0, 0), (h - 1, w - 1)) 0
   lines <- sequence $ fmap randLine [dims | _ <- [1 .. numLines]]
   drawLinesA arr lines
   elements <- getElems arr
-  writePbm $ rectangle elements w
+  writePng w h (imageToVector elements) file
+  -- writePbm $ rectangle elements w
 
--- Turn a list into a list of lists, each one of length N.  (The final list
--- will be shorter than N if the list's length is not a multiple of N.)
-rectangle :: [a] -> Int -> [[a]]
-rectangle [] _ = []
-rectangle xs n = take n xs : rectangle (drop n xs) n
+-- Write an image to file NAME via the JuicyPixels lib.
+writePng :: Int -> Int -> V.Vector W.Word8 -> String -> IO ()
+writePng w h v name = P.savePngImage name img
+           -- where img = P.ImageY8 $ P.Image 100 100 (V.replicate 30000 255)
+           where img = P.ImageY8 $ P.Image w h v
 
--- main = writePbm $ drawLine (makeLine (0,0) (width - 1, height - 1)) pureBlackImg
--- main = imageCreator "foo.png"
-
--- Juicy pixels lib.
--- imageCreator :: String -> IO ()
--- imageCreator path = writePng path $ generateImage pixelRenderer 250 300
---    where pixelRenderer x y = PixelRGB8 (fromIntegral x) (fromIntegral y) 128
+-- Just turn a list of something like [Int] to a vector of bytes.  JuicyPixels
+-- likes to work with vectors it seems.
+imageToVector :: (Eq a, Num a) => [a] -> V.Vector W.Word8
+imageToVector = V.fromList . (map toWord)
+    where toWord x
+              | x /= 0 = 255
+              | otherwise = 0
 
 -- An image of all zero pixels.
 pureBlackImg :: Dimensions -> [[Int]]
@@ -115,3 +110,5 @@ randLine (w, h) = do
       (x2, g3) = randomR (0, w-1) g2
       (y2, g4) = randomR (0, h-1) g3
   return $ makeLine (x1, y1) (x2, y2)
+
+         
