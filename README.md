@@ -3,10 +3,10 @@ Render
 
 ## Introduction ##
 
-This program draws a bunch of random lines into an image, and outputs the result
-as a JPEG, intended as a demo of how to do mutable, C-style arrays in Haskell.
+This program draws a random lines into an image, and writes the result
+as a PNG, intended as a demo of how to do mutable, C-style arrays in Haskell.
 
-The size of the image, and the number of lines drawn are controlled via
+The size of the image, and number of lines drawn are controlled via
 arguments.  An argument also controls what data structure is used to store the
 image, as each random line is rasterized into it.  Currently, the choice is
 between "array" and "list".  Type "list" means the program just uses the
@@ -18,7 +18,7 @@ the array version is much faster.
 
 ## Example Output ##
 
-TODO: Add a sample image here.
+![10 white lines in a sea of black](/sample.png "10 white lines in a sea of black")
 
 ## Usage ##
 
@@ -28,14 +28,17 @@ randomly, so the program output will be different from run to run.
 
 The choice of data structure for the image is also controlled via an argument.
 
-Usage: `render {list|array} width height number-of-lines > myimage.jpg`
+Usage: `render {list|array} width height number-of-lines output-filename`
 
-Example: `render list 800 600 42 > myimage.jpg`.  This example draws 42 random,
-straight lines into an 800 by 600 image and writes it out as a JPEG image.
+Example: `render list 800 600 42 myimage.png`.  This example draws 42 random,
+straight lines into an 800 by 600 image and writes it out as a PNG.
 
 NB: The arguments must be provided in the correct order, as above.  (Might
 investigate a getopts style package to improve this with named parameters and so
 on.)
+
+Finally, a convenient way to run this thing after a `stack build` is something
+like `stack exec render-exe array 800 600 10 test.png`.
 
 ## Running Stats ##
 
