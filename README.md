@@ -4,8 +4,8 @@ Render
 ## Introduction ##
 
 This program rasterizes randomly created lines into an image, and writes the
-result to a file in PNG format, intended as a demo of how to do mutable, C-style
-arrays in Haskell.
+result to a PNG file, intended as a demo of how to do mutable, C-style arrays in
+Haskell.
 
 The size of the image, and number of lines drawn are controlled via
 arguments.  An argument also controls what data structure is used to store the
@@ -21,7 +21,8 @@ the array version is much faster (and much less insane).
 
 ![10 white lines in a sea of black](/sample.png "10 white lines in a sea of black")
 
-This picture was generated via the command:
+This 400 pixel wide and 300 pixel high image, showing 10 very nice and fresh
+white lines, was generated via the command:
 
     render array 400 300 10 sample.png
 

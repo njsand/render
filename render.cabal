@@ -8,7 +8,7 @@ license-file:        LICENSE
 author:              Nick Sandow
 maintainer:          nick.sandow@gmail.com
 copyright:           2017 Nick Sandow
-category:            Web
+category:            Graphics
 build-type:          Simple
 extra-source-files:  README.md
 cabal-version:       >=1.10
