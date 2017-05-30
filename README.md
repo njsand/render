@@ -4,15 +4,15 @@ Render
 ## Introduction ##
 
 This program rasterizes randomly created lines into an image, and writes the
-result to a PNG file, intended as a demo of how to do mutable, C-style arrays in
-Haskell.
+result to a PNG file.  It was written to explore answers to the question: How do
+I do C-style arrays in Haskell?
 
-The size of the image, and number of lines drawn are controlled via
-arguments.  An argument also controls what data structure is used to store the
-image, as each random line is rasterized into it.  Currently, the choice is
+The size of the image and number of lines drawn are controlled via arguments.
+An argument also controls what data structure is used during execution to store
+the image as each random line is rasterized into it.  Currently, the choice is
 between "array" and "list".  Type "list" means the program just uses the
 standard Haskell list (actually a list of lists) to store the image.  Type
-"array" means an IOUArray is used.
+"array" means an IOUArray from the package Data.Array.IO is used.
 
 As you might expect, drawing pixels into an image as a list is very slow, and
 the array version is much faster (and much less insane).
@@ -63,7 +63,8 @@ lines into an 800 by 600 image and writes it out as a PNG file named
 `myimage.png`.
 
 NB: The arguments must be provided in the correct order, as above.  Named
-parameters in different orders do not work currently.
+parameters in different orders do not work currently.  (I suppose there is a
+getopts for Haskell out there which could do this.)
 
 ## Running Stats ##
 
@@ -87,3 +88,6 @@ this is way faster.
     Minutes           : 0
     Seconds           : 0
     Milliseconds      : 364
+
+These times are for the entire execution lifetime, including writing the image
+to disk at the end and any other startup costs, etc, but you get the idea.
