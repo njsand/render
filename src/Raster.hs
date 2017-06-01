@@ -63,12 +63,11 @@ get xs i j = xs !! i !! j
 -- Plot the points of the line in an image represented as an [[Int]].  (This
 -- is going to be slow.)
 drawLine :: Image -> Line -> Image
-drawLine image line = let points = linePoints line in
-    drawPoints image points
+drawLine image line = foldl plot image (linePoints line)
 
-drawPoints :: Image -> [Point] -> Image
-drawPoints img [] = img
-drawPoints img ((x,y):ps) = drawPoints (set2 img (y, x) 1) ps
+-- Turn on (set to 1) a pixel in an image.
+plot :: Image -> Point -> Image
+plot img (x, y) = set2 img (y, x) 1
 
 -- Return an IO action that draws lines into an array.
 drawLinesA :: (IOUArray (Int, Int) Int) -> [Line] -> IO (IOUArray (Int, Int) Int)

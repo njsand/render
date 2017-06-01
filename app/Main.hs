@@ -55,10 +55,11 @@ boolMaybe False = Nothing
 
 -- Check that a string corresponds to one of the SequenceType values.
 checkSeqType :: String -> Maybe SequenceType
-checkSeqType s
-    | map toLower s == "array" = Just Array
-    | map toLower s == "list" = Just List
-    | otherwise = Nothing
+checkSeqType s =
+    case map toLower s of
+      "array" -> Just Array
+      "list" -> Just List
+      _ -> Nothing
 
 -- Write a useage message to stdout.
 usage :: IO ()
